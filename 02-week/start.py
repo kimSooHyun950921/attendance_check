@@ -3,14 +3,14 @@ import json
 import re
 from  datetime import datetime
 import csv
-
+import urllib.parse
 FLAGS = None
 
 
 async def client_handler(reader, writer):
     print(f'Connected with {writer.get_extra_info("peername")}')
     cdata = (await reader.read(1500)).decode('utf-8')
-    s_id = ''
+    s_id = b''
     s_name = ''
     random_num = '' 
     sdata = ''
@@ -18,14 +18,16 @@ async def client_handler(reader, writer):
     try:
       cdata = cdata.split('\r\n')
       cmethod, cpath, cproto = cdata[0].split(' ')
-      jdata = json.loads(cdata[-1])
       
       if cmethod == 'POST':
+        jdata = json.loads(cdata[-1])
         s_id, s_name, random_num = do_post(jdata)
       elif cmethod == 'GET':
         s_id, s_name, random_num = do_get(cpath)
+        print(s_id, s_name, random_num)
       
       err_msg = check_validity(s_id, random_num)
+      print(err_msg)
       if err_msg:
         sdata = get_decline_data(err_msg)
       else:
@@ -35,6 +37,9 @@ async def client_handler(reader, writer):
     except Exception as e:
       print("ERROR", e)
       writer.close()
+
+    print("SDATA", type(sdata))
+#    sdata = sdata.encode('utf-8')
     writer.write(sdata)
     await writer.drain()
     writer.close()
@@ -55,7 +60,7 @@ def store_student_info(student_id, name):
     time = '%s-%s-%s %s:%s:%s' % \
            (now.year, now.month, now.day, now.hour, now.minute, now.second)
     print(time, student_id, name)
-    with open('student.csv','a', encoding='utf-8') as csv_file:
+    with open('student2.csv','a', encoding='utf-8') as csv_file:
       csv_writer = csv.writer(csv_file, delimiter=',',
                               quotechar='|', quoting=csv.QUOTE_MINIMAL)
       csv_writer.writerow([time, student_id, name])
@@ -83,11 +88,12 @@ def get_send_data(s_id, s_name, ran_num):
 
 
 def do_get(cpath):
+    print(cpath)
     split_cpath = cpath.split('&')
-    s_id = split_cpath[0].split('=')[1]
-    s_name = split_cpath[1].split('=')[1]
+    student_id = split_cpath[0].split('=')[1]
+    student_name = split_cpath[1].split('=')[1]
     random_num = split_cpath[2].split('=')[1]
-    s_name = urllib.parse.unquote(s_name)
+    student_name = urllib.parse.unquote(student_name)
     return student_id, student_name, random_num
 
 
