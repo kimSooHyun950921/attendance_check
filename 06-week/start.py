@@ -10,6 +10,7 @@ async def client_handler(reader, writer):
     print(f'Connected with {writer.get_extra_info("peername")}')
     send_list = ['input name', 'input ID', 'input passcode', "input OK"]
     recv_dict = {"name":'', "ID":'', "passcode":int()}
+    flag = 0
 
     cdata = (await reader.read(1500)).decode('utf-8')
     print("[{}]".format(writer.get_extra_info("peername")[0]), cdata)
@@ -23,10 +24,11 @@ async def client_handler(reader, writer):
 
       if not validity_check(cdata, info):
         writer.write("not correct try Again".encode('utf-8'))
+        flag = 1
         break
       recv_dict[info] = cdata
-
-    store_student_info(recv_dict["ID"], recv_dict["name"])
+    if flag == 0:
+      store_student_info(recv_dict["ID"], recv_dict["name"])
     writer.write("bye".encode("utf-8"))
 
 
